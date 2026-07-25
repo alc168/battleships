@@ -25,3 +25,5 @@ export const ORIENTATIONS = {
   HORIZONTAL: 'horizontal',
   VERTICAL: 'vertical',
 };
+
+export const APP_VERSION = '1.0.7';

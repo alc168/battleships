@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { GAME_PHASES, ORIENTATIONS, SHIPS, CELL_STATES, GRID_SIZE } from './constants.js';
+import { GAME_PHASES, ORIENTATIONS, SHIPS, CELL_STATES, GRID_SIZE, APP_VERSION } from './constants.js';
 import { 
   createEmptyGrid, 
   isValidPlacement, 
@@ -38,23 +38,21 @@ function App() {
 
   const handlePlacement = (row, col) => {
     const ship = SHIPS[currentShipIndex];
-    console.log('Placement attempt:', { ship, row, col, orientation, currentShipIndex });
     
     if (isValidPlacement(playerGrid, ship, row, col, orientation)) {
-      console.log('Valid placement, proceeding...');
       const result = placeShipWithTracking(playerGrid, ship, row, col, orientation, playerShipPositions);
+      
+      // Update all state together
       setPlayerGrid(result.grid);
       setPlayerShipPositions(result.shipPositions);
-      setPlayerPlacedShips([...playerPlacedShips, ship.name]);
+      setPlayerPlacedShips(prev => [...prev, ship.name]);
       
       if (currentShipIndex < SHIPS.length - 1) {
-        setCurrentShipIndex(currentShipIndex + 1);
+        setCurrentShipIndex(prev => prev + 1);
       } else {
         // All ships placed, start computer placement and game
         startGame();
       }
-    } else {
-      console.log('Invalid placement');
     }
   };
 
@@ -230,7 +228,7 @@ function App() {
             {grid.map((row, rowIndex) =>
               row.map((cell, colIndex) => (
                 <div
-                  key={`${rowIndex}-${colIndex}`}
+                  key={`${isComputerGrid ? 'enemy' : 'player'}-${rowIndex}-${colIndex}`}
                   className={getCellClass(cell, isComputerGrid, rowIndex, colIndex)}
                   onClick={() => handleCellClick(rowIndex, colIndex)}
                 >
@@ -260,7 +258,7 @@ function App() {
             else if (isPlaced) status = 'operational';
             
             return (
-              <div key={ship.name} className={`ship-status-compact ${status}`}>
+              <div key={`${isPlayer ? 'player' : 'enemy'}-${ship.name}`} className={`ship-status-compact ${status}`}>
                 <span className="font-bold">{ship.name.charAt(0)}</span>
                 <span className="flex-1 truncate">{ship.name}</span>
                 <span className="text-xs">
@@ -277,10 +275,13 @@ function App() {
   return (
     <div className="screen-fit operations-room">
       {/* Header */}
-      <div className="header-compact">
+      <div className="header-compact relative">
         <h1 className="text-2xl font-bold text-green-400 tracking-wider">
           ⚔️ BATTLESHIPS ⚔️
         </h1>
+        <div className="absolute top-0 right-4 text-xs text-green-600 font-mono">
+          v{APP_VERSION}
+        </div>
       </div>
       
       {/* Status Bar */}
