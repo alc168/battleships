@@ -28,6 +28,7 @@ function App() {
   const [playerPlacedShips, setPlayerPlacedShips] = useState([]);
   const [playerShipPositions, setPlayerShipPositions] = useState([]);
   const [computerShipPositions, setComputerShipPositions] = useState([]);
+  const [computerHuntTargets, setComputerHuntTargets] = useState([]);
 
   const handleCellClick = (row, col) => {
     if (gamePhase === GAME_PHASES.PLACEMENT) {
@@ -92,19 +93,88 @@ function App() {
     }, 500);
   };
 
+  const isCellOfSunkShip = (isComputerGrid, row, col) => {
+    if (isComputerGrid) {
+      return computerShipPositions.some(ship => 
+        computerSunkShips.includes(ship.name) &&
+        ship.positions.some(pos => pos.row === row && pos.col === col)
+      );
+    } else {
+      return playerShipPositions.some(ship => 
+        playerSunkShips.includes(ship.name) &&
+        ship.positions.some(pos => pos.row === row && pos.col === col)
+      );
+    }
+  };
+
+  const getAdjacentCells = (row, col) => {
+    const adjacent = [];
+    if (row > 0) adjacent.push({ row: row - 1, col });
+    if (row < GRID_SIZE - 1) adjacent.push({ row: row + 1, col });
+    if (col > 0) adjacent.push({ row, col: col - 1 });
+    if (col < GRID_SIZE - 1) adjacent.push({ row, col: col + 1 });
+    return adjacent;
+  };
+
+  const getHuntDirectionTargets = (row, col) => {
+    // Look at recent hits to determine ship direction
+    const recentHits = computerMoves.filter(move => move.hit && !isCellOfSunkShip(false, move.row, move.col));
+    if (recentHits.length < 2) return getAdjacentCells(row, col);
+    
+    const lastHit = recentHits[recentHits.length - 1];
+    const previousHit = recentHits[recentHits.length - 2];
+    
+    // If the last two hits are aligned, continue in that direction
+    if (lastHit.row === previousHit.row) {
+      // Horizontal ship
+      const leftCol = Math.min(lastHit.col, previousHit.col) - 1;
+      const rightCol = Math.max(lastHit.col, previousHit.col) + 1;
+      const targets = [];
+      if (leftCol >= 0) targets.push({ row: lastHit.row, col: leftCol });
+      if (rightCol < GRID_SIZE) targets.push({ row: lastHit.row, col: rightCol });
+      return targets.length > 0 ? targets : getAdjacentCells(row, col);
+    } else if (lastHit.col === previousHit.col) {
+      // Vertical ship
+      const topRow = Math.min(lastHit.row, previousHit.row) - 1;
+      const bottomRow = Math.max(lastHit.row, previousHit.row) + 1;
+      const targets = [];
+      if (topRow >= 0) targets.push({ row: topRow, col: lastHit.col });
+      if (bottomRow < GRID_SIZE) targets.push({ row: bottomRow, col: lastHit.col });
+      return targets.length > 0 ? targets : getAdjacentCells(row, col);
+    }
+    
+    return getAdjacentCells(row, col);
+  };
+
   const handleComputerAttack = () => {
     let row, col;
-    let validMove = false;
     
-    // Find a valid move (not already attacked)
-    while (!validMove) {
-      const position = getRandomPosition();
-      row = position.row;
-      col = position.col;
-      
-      if (!computerMoves.some(move => move.row === row && move.col === col)) {
-        validMove = true;
+    // Filter out invalid hunt targets (already attacked or out of bounds)
+    const validTargets = computerHuntTargets.filter(target => 
+      target.row >= 0 && target.row < GRID_SIZE &&
+      target.col >= 0 && target.col < GRID_SIZE &&
+      !computerMoves.some(move => move.row === target.row && move.col === target.col)
+    );
+    
+    if (validTargets.length > 0) {
+      // Use the first valid hunt target
+      const target = validTargets[0];
+      row = target.row;
+      col = target.col;
+      setComputerHuntTargets(validTargets.slice(1));
+    } else {
+      // No hunt targets, pick random
+      let validMove = false;
+      while (!validMove) {
+        const position = getRandomPosition();
+        row = position.row;
+        col = position.col;
+        
+        if (!computerMoves.some(move => move.row === row && move.col === col)) {
+          validMove = true;
+        }
       }
+      setComputerHuntTargets([]);
     }
 
     const { grid: newPlayerGrid, hit } = processAttack(playerGrid, row, col);
@@ -113,9 +183,29 @@ function App() {
     setPlayerGrid(newPlayerGrid);
     setComputerMoves(updatedMoves);
 
+    // If hit, add adjacent cells to hunt targets
+    if (hit) {
+      const newTargets = getHuntDirectionTargets(row, col);
+      setComputerHuntTargets(prev => {
+        // Add new targets to the front of the queue, but filter out duplicates and already-attacked cells
+        const combined = [...newTargets, ...prev];
+        const filtered = combined.filter((target, index, self) => 
+          index === self.findIndex(t => t.row === target.row && t.col === target.col) &&
+          !updatedMoves.some(move => move.row === target.row && move.col === target.col)
+        );
+        return filtered;
+      });
+    }
+
     // Check for newly sunk ships using updated moves (including this hit)
     const newSunkShips = checkSunkShips(playerShipPositions, updatedMoves);
     setPlayerSunkShips(newSunkShips);
+    
+    // Clear hunt targets for sunk ships
+    setComputerHuntTargets(prev => prev.filter(target => !newSunkShips.some(name => {
+      const sunkShip = playerShipPositions.find(ship => ship.name === name);
+      return sunkShip && sunkShip.positions.some(pos => pos.row === target.row && pos.col === target.col);
+    })));
 
     if (checkWinCondition(newPlayerGrid)) {
       setWinner('computer');
@@ -141,20 +231,7 @@ function App() {
     setPlayerPlacedShips([]);
     setPlayerShipPositions([]);
     setComputerShipPositions([]);
-  };
-
-  const isCellOfSunkShip = (isComputerGrid, row, col) => {
-    if (isComputerGrid) {
-      return computerShipPositions.some(ship => 
-        computerSunkShips.includes(ship.name) &&
-        ship.positions.some(pos => pos.row === row && pos.col === col)
-      );
-    } else {
-      return playerShipPositions.some(ship => 
-        playerSunkShips.includes(ship.name) &&
-        ship.positions.some(pos => pos.row === row && pos.col === col)
-      );
-    }
+    setComputerHuntTargets([]);
   };
 
   const getCellClass = (cellState, isComputerGrid, row, col) => {
@@ -260,6 +337,20 @@ function App() {
     );
   };
 
+  const renderShipIcon = (size, isSunk) => {
+    const squares = Array.from({ length: size }, (_, i) => (
+      <div 
+        key={i} 
+        className={`w-1.5 h-3 rounded-sm ${isSunk ? 'bg-red-600' : 'bg-gray-500'}`}
+      ></div>
+    ));
+    return (
+      <div className="flex gap-0.5 items-center">
+        {squares}
+      </div>
+    );
+  };
+
   const renderShipStatus = (ships, sunkShips, placedShips, isPlayer) => {
     return (
       <div className="operations-panel rounded-lg p-2">
@@ -277,8 +368,8 @@ function App() {
             
             return (
               <div key={`${isPlayer ? 'player' : 'enemy'}-${index}-${ship.name}-${status}`} className={`ship-status-compact ${status}`}>
-                <span className="font-bold">{ship.name.charAt(0)}</span>
-                <span className="flex-1 truncate">{ship.name}</span>
+                {renderShipIcon(ship.size, isSunk)}
+                <span className="flex-1 truncate text-xs">{ship.name}</span>
                 <span className="text-xs">
                   {status === 'pending' ? '⏳' : status === 'operational' ? '✓' : '☠'}
                 </span>
@@ -376,11 +467,13 @@ function App() {
       </div>
       
       {/* Legend */}
-      <div className="h-12 flex items-center justify-center gap-6 operations-panel rounded-lg px-4">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 ship-cell rounded"></div>
-          <span className="text-green-300 text-xs">SHIP</span>
-        </div>
+      <div className="h-12 flex items-center justify-center gap-4 operations-panel rounded-lg px-4">
+        {SHIPS.map((ship, index) => (
+          <div key={`legend-${ship.name}`} className="flex items-center gap-1">
+            {renderShipIcon(ship.size, false)}
+            <span className="text-green-300 text-xs">{ship.name}</span>
+          </div>
+        ))}
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 tactical-cell rounded"></div>
           <span className="text-green-300 text-xs">WATER</span>
@@ -394,6 +487,34 @@ function App() {
           <span className="text-green-300 text-xs">MISS</span>
         </div>
       </div>
+
+      {/* Win Screen Modal */}
+      {gamePhase === GAME_PHASES.GAME_OVER && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="operations-panel rounded-2xl p-8 max-w-md mx-4 text-center transform scale-100">
+            <div className="text-6xl mb-4">
+              {winner === 'player' ? '🎉' : '💥'}
+            </div>
+            <h2 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
+              {winner === 'player' ? 'VICTORY' : 'DEFEAT'}
+            </h2>
+            <p className="text-green-200 text-lg mb-6">
+              {winner === 'player' 
+                ? 'You have destroyed the enemy fleet!' 
+                : 'Your fleet has been destroyed...'}
+            </p>
+            <div className="text-sm text-green-400 mb-6 font-mono">
+              v{APP_VERSION}
+            </div>
+            <button
+              onClick={resetGame}
+              className="tactical-button px-8 py-3 rounded-lg text-lg font-bold"
+            >
+              🎯 NEW MISSION
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
