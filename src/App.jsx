@@ -42,15 +42,28 @@ function App() {
     if (isValidPlacement(playerGrid, ship, row, col, orientation)) {
       const result = placeShipWithTracking(playerGrid, ship, row, col, orientation, playerShipPositions);
       
+      console.log('Setting new grid state:', result.grid);
+      console.log('Setting new ship positions:', result.shipPositions);
+      console.log('Current placed ships before update:', playerPlacedShips);
+      
       // Update all state together
       setPlayerGrid(result.grid);
       setPlayerShipPositions(result.shipPositions);
-      setPlayerPlacedShips(prev => [...prev, ship.name]);
+      setPlayerPlacedShips(prev => {
+        const newPlaced = [...prev, ship.name];
+        console.log('New placed ships:', newPlaced);
+        return newPlaced;
+      });
       
       if (currentShipIndex < SHIPS.length - 1) {
-        setCurrentShipIndex(prev => prev + 1);
+        setCurrentShipIndex(prev => {
+          const newIndex = prev + 1;
+          console.log('New currentShipIndex:', newIndex);
+          return newIndex;
+        });
       } else {
         // All ships placed, start computer placement and game
+        console.log('Starting game');
         startGame();
       }
     }
@@ -156,6 +169,7 @@ function App() {
         baseClass += move.hit ? ' hit-cell border-red-500' : ' miss-cell border-yellow-400';
       } else if (cellState === CELL_STATES.SHIP) {
         baseClass += ' ship-cell border-gray-500';
+        console.log(`Ship cell at ${row},${col}`);
       } else {
         baseClass += ' tactical-cell border-green-600/30';
       }
@@ -200,13 +214,14 @@ function App() {
   };
 
   const renderGrid = (grid, isComputerGrid) => {
+    console.log('Rendering grid:', { isComputerGrid, gridSample: grid[0] });
     return (
       <div className="flex flex-col gap-0.5">
         {/* Column headers */}
         <div className="flex justify-center gap-0.5 mb-0.5">
           <div className="w-5"></div> {/* Corner spacer */}
           {Array.from({ length: GRID_SIZE }, (_, i) => (
-            <div key={`col-${i}`} className="coordinate-label text-center py-0.5 w-5">
+            <div key={`col-${isComputerGrid ? 'enemy' : 'player'}-${i}`} className="coordinate-label text-center py-0.5 w-5">
               {String.fromCharCode(65 + i)}
             </div>
           ))}
@@ -216,7 +231,7 @@ function App() {
           {/* Row numbers */}
           <div className="flex flex-col gap-0.5 mr-0.5">
             {Array.from({ length: GRID_SIZE }, (_, i) => (
-              <div key={`row-${i}`} className="coordinate-label text-center py-1.5 w-5">
+              <div key={`row-${isComputerGrid ? 'enemy' : 'player'}-${i}`} className="coordinate-label text-center py-1.5 w-5">
                 {i + 1}
               </div>
             ))}
@@ -228,7 +243,7 @@ function App() {
             {grid.map((row, rowIndex) =>
               row.map((cell, colIndex) => (
                 <div
-                  key={`${isComputerGrid ? 'enemy' : 'player'}-${rowIndex}-${colIndex}`}
+                  key={`${isComputerGrid ? 'enemy' : 'player'}-${rowIndex * GRID_SIZE + colIndex}`}
                   className={getCellClass(cell, isComputerGrid, rowIndex, colIndex)}
                   onClick={() => handleCellClick(rowIndex, colIndex)}
                 >
@@ -243,13 +258,14 @@ function App() {
   };
 
   const renderShipStatus = (ships, sunkShips, placedShips, isPlayer) => {
+    console.log('Ship status render:', { placedShips, sunkShips, isPlayer });
     return (
       <div className="operations-panel rounded-lg p-2">
         <h3 className="text-xs font-semibold text-green-400 mb-2 uppercase tracking-wider">
           {isPlayer ? 'Friendly Fleet' : 'Enemy Contacts'}
         </h3>
         <div className="grid grid-cols-2 gap-1">
-          {ships.map((ship) => {
+          {ships.map((ship, index) => {
             const isSunk = sunkShips.includes(ship.name);
             const isPlaced = placedShips.includes(ship.name);
             
@@ -257,8 +273,10 @@ function App() {
             if (isSunk) status = 'sunk';
             else if (isPlaced) status = 'operational';
             
+            console.log(`Ship ${ship.name}: status=${status}, isPlaced=${isPlaced}`);
+            
             return (
-              <div key={`${isPlayer ? 'player' : 'enemy'}-${ship.name}`} className={`ship-status-compact ${status}`}>
+              <div key={`${isPlayer ? 'player' : 'enemy'}-${index}-${ship.name}-${status}`} className={`ship-status-compact ${status}`}>
                 <span className="font-bold">{ship.name.charAt(0)}</span>
                 <span className="flex-1 truncate">{ship.name}</span>
                 <span className="text-xs">
