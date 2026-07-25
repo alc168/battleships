@@ -237,6 +237,7 @@ function App() {
   const getCellClass = (cellState, isComputerGrid, row, col) => {
     let baseClass = 'w-6 h-6 border flex items-center justify-center cursor-pointer relative overflow-hidden';
     const isSunk = isCellOfSunkShip(isComputerGrid, row, col);
+    const shouldGlow = isSunk || (!isComputerGrid && cellState === CELL_STATES.SHIP);
     
     if (isComputerGrid) {
       const move = playerMoves.find(m => m.row === row && m.col === col);
@@ -266,6 +267,10 @@ function App() {
       } else {
         baseClass += ' tactical-cell border-green-600/30';
       }
+    }
+    
+    if (shouldGlow) {
+      baseClass += isSunk ? ' radar-glow-sunk' : ' radar-glow';
     }
     
     return baseClass;
