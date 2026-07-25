@@ -237,7 +237,9 @@ function App() {
   const getCellClass = (cellState, isComputerGrid, row, col) => {
     let baseClass = 'w-6 h-6 border flex items-center justify-center cursor-pointer relative overflow-hidden';
     const isSunk = isCellOfSunkShip(isComputerGrid, row, col);
-    const shouldGlow = isSunk || (!isComputerGrid && cellState === CELL_STATES.SHIP);
+    
+    let isMiss = false;
+    let isFriendlyShip = false;
     
     if (isComputerGrid) {
       const move = playerMoves.find(m => m.row === row && m.col === col);
@@ -248,6 +250,7 @@ function App() {
           baseClass += ' hit-cell border-red-500';
         } else {
           baseClass += ' miss-cell border-yellow-400';
+          isMiss = true;
         }
       } else {
         baseClass += ' tactical-cell border-green-600/30';
@@ -261,14 +264,18 @@ function App() {
           baseClass += ' hit-cell border-red-500';
         } else {
           baseClass += ' miss-cell border-yellow-400';
+          isMiss = true;
         }
       } else if (cellState === CELL_STATES.SHIP) {
         baseClass += ' ship-cell border-gray-500';
+        isFriendlyShip = true;
       } else {
         baseClass += ' tactical-cell border-green-600/30';
       }
     }
     
+    // Only ships, sunk wreckage, and misses glow — not empty water or regular hits
+    const shouldGlow = isSunk || isFriendlyShip || isMiss;
     if (shouldGlow) {
       baseClass += isSunk ? ' radar-glow-sunk' : ' radar-glow';
     }
@@ -324,7 +331,7 @@ function App() {
           
           {/* Grid */}
           <div className="relative grid grid-cols-10 gap-0 border-2 border-green-500/30 rounded-lg overflow-hidden radar-grid">
-            <div className="radar-sweep"></div>
+            {isComputerGrid && <div className="radar-sweep"></div>}
             {grid.map((row, rowIndex) =>
               row.map((cell, colIndex) => (
                 <div
