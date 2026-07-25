@@ -29,7 +29,6 @@ function App() {
   const [computerShipPositions, setComputerShipPositions] = useState([]);
 
   const handleCellClick = (row, col) => {
-    console.log('Cell clicked:', { row, col, gamePhase, currentShipIndex });
     if (gamePhase === GAME_PHASES.PLACEMENT) {
       handlePlacement(row, col);
     } else if (gamePhase === GAME_PHASES.PLAYING && isPlayerTurn) {
@@ -226,7 +225,8 @@ function App() {
           </div>
           
           {/* Grid */}
-          <div className="grid grid-cols-10 gap-0 border-2 border-green-500/30 rounded-lg overflow-hidden radar-grid">
+          <div className="relative grid grid-cols-10 gap-0 border-2 border-green-500/30 rounded-lg overflow-hidden radar-grid">
+            <div className="radar-sweep"></div>
             {grid.map((row, rowIndex) =>
               row.map((cell, colIndex) => (
                 <div
