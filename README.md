@@ -1,6 +1,6 @@
-# Battleship
+# Battleships
 
-A modern, elegant implementation of the classic Battleship naval combat game built with React, Vite, and Tailwind CSS.
+A modern, elegant implementation of the classic Battleships naval combat game built with React, Vite, and Tailwind CSS.
 
 ## Features
 

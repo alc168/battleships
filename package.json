@@ -1,9 +1,9 @@
 {
-  "name": "battleship",
+  "name": "battleships",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://alc168.github.io/battleship",
+  "homepage": "https://alc168.github.io/battleships",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

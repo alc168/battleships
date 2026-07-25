@@ -29,6 +29,7 @@ function App() {
   const [computerShipPositions, setComputerShipPositions] = useState([]);
 
   const handleCellClick = (row, col) => {
+    console.log('Cell clicked:', { row, col, gamePhase, isPlayerTurn });
     if (gamePhase === GAME_PHASES.PLACEMENT) {
       handlePlacement(row, col);
     } else if (gamePhase === GAME_PHASES.PLAYING && isPlayerTurn) {
@@ -275,7 +276,7 @@ function App() {
       {/* Header */}
       <div className="header-compact">
         <h1 className="text-2xl font-bold text-green-400 tracking-wider">
-          ⚔️ NAVAL TACTICAL COMMAND ⚔️
+          ⚔️ BATTLESHIPS ⚔️
         </h1>
       </div>
       
