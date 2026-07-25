@@ -29,6 +29,7 @@ function App() {
   const [computerShipPositions, setComputerShipPositions] = useState([]);
 
   const handleCellClick = (row, col) => {
+    console.log('Cell clicked:', { row, col, gamePhase, currentShipIndex });
     if (gamePhase === GAME_PHASES.PLACEMENT) {
       handlePlacement(row, col);
     } else if (gamePhase === GAME_PHASES.PLAYING && isPlayerTurn) {
@@ -38,8 +39,10 @@ function App() {
 
   const handlePlacement = (row, col) => {
     const ship = SHIPS[currentShipIndex];
+    console.log('Placement attempt:', { ship, row, col, orientation, currentShipIndex });
     
     if (isValidPlacement(playerGrid, ship, row, col, orientation)) {
+      console.log('Valid placement, proceeding...');
       const result = placeShipWithTracking(playerGrid, ship, row, col, orientation, playerShipPositions);
       setPlayerGrid(result.grid);
       setPlayerShipPositions(result.shipPositions);
@@ -51,6 +54,8 @@ function App() {
         // All ships placed, start computer placement and game
         startGame();
       }
+    } else {
+      console.log('Invalid placement');
     }
   };
 
@@ -221,8 +226,7 @@ function App() {
           </div>
           
           {/* Grid */}
-          <div className="relative grid grid-cols-10 gap-0 border-2 border-green-500/30 rounded-lg overflow-hidden radar-grid">
-            <div className="radar-sweep"></div>
+          <div className="grid grid-cols-10 gap-0 border-2 border-green-500/30 rounded-lg overflow-hidden radar-grid">
             {grid.map((row, rowIndex) =>
               row.map((cell, colIndex) => (
                 <div
