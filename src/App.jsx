@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { GAME_PHASES, ORIENTATIONS, SHIPS, CELL_STATES, GRID_SIZE, APP_VERSION } from './constants.js';
 import { 
   createEmptyGrid, 
@@ -38,12 +38,21 @@ function App() {
   const [computerHuntTargets, setComputerHuntTargets] = useState([]);
 
   // Randomly place enemy ships and start the playing phase
-  const startGame = () => {
+  const startGame = useCallback(() => {
     const result = placeShipsRandomlyWithTracking(createEmptyGrid());
     setComputerGrid(result.grid);
     setComputerShipPositions(result.shipPositions);
     setGamePhase(GAME_PHASES.PLAYING);
-  };
+  }, []);
+
+  // Randomly place any ships not yet deployed, then start the game
+  const handleRandomPlacement = useCallback(() => {
+    const result = placeRemainingShipsRandomly(playerGrid, playerShipPositions, currentShipIndex);
+    setPlayerGrid(result.grid);
+    setPlayerShipPositions(result.shipPositions);
+    setPlayerPlacedShips(prev => [...prev, ...result.placedShipNames]);
+    startGame();
+  }, [playerGrid, playerShipPositions, currentShipIndex, startGame]);
 
   // Keyboard shortcuts: R rotates orientation, Enter randomly places remaining ships
   useEffect(() => {
@@ -57,17 +66,13 @@ function App() {
       }
       
       if (event.key === 'Enter') {
-        const result = placeRemainingShipsRandomly(playerGrid, playerShipPositions, currentShipIndex);
-        setPlayerGrid(result.grid);
-        setPlayerShipPositions(result.shipPositions);
-        setPlayerPlacedShips(prev => [...prev, ...result.placedShipNames]);
-        startGame();
+        handleRandomPlacement();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gamePhase, playerGrid, playerShipPositions, currentShipIndex]);
+  }, [gamePhase, handleRandomPlacement]);
 
   // Route grid clicks to placement or attack handlers based on game phase
   const handleCellClick = (row, col) => {
@@ -465,6 +470,12 @@ function App() {
                 className="tactical-button px-3 py-1 rounded text-xs"
               >
                 {orientation === 'horizontal' ? 'HORIZ' : 'VERT'}
+              </button>
+              <button
+                onClick={handleRandomPlacement}
+                className="tactical-button px-3 py-1 rounded text-xs"
+              >
+                🎲 RANDOM
               </button>
             </>
           )}
