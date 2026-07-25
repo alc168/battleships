@@ -4,6 +4,7 @@ import {
   createEmptyGrid, 
   isValidPlacement, 
   placeShip, 
+  placeShipWithTracking,
   processAttack, 
   checkWinCondition,
   placeShipsRandomlyWithTracking,
