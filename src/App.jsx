@@ -238,11 +238,11 @@ function App() {
     let baseClass = 'w-6 h-6 border flex items-center justify-center cursor-pointer relative overflow-hidden';
     const isSunk = isCellOfSunkShip(isComputerGrid, row, col);
     
-    let isMiss = false;
-    let isFriendlyShip = false;
+    const move = isComputerGrid 
+      ? playerMoves.find(m => m.row === row && m.col === col)
+      : computerMoves.find(m => m.row === row && m.col === col);
     
     if (isComputerGrid) {
-      const move = playerMoves.find(m => m.row === row && m.col === col);
       if (move) {
         if (isSunk) {
           baseClass += ' sunk-cell border-red-700';
@@ -250,13 +250,11 @@ function App() {
           baseClass += ' hit-cell border-red-500';
         } else {
           baseClass += ' miss-cell border-yellow-400';
-          isMiss = true;
         }
       } else {
         baseClass += ' tactical-cell border-green-600/30';
       }
     } else {
-      const move = computerMoves.find(m => m.row === row && m.col === col);
       if (move) {
         if (isSunk) {
           baseClass += ' sunk-cell border-red-700';
@@ -264,18 +262,16 @@ function App() {
           baseClass += ' hit-cell border-red-500';
         } else {
           baseClass += ' miss-cell border-yellow-400';
-          isMiss = true;
         }
       } else if (cellState === CELL_STATES.SHIP) {
         baseClass += ' ship-cell border-gray-500';
-        isFriendlyShip = true;
       } else {
         baseClass += ' tactical-cell border-green-600/30';
       }
     }
     
-    // Only ships, sunk wreckage, and misses glow — not empty water or regular hits
-    const shouldGlow = isSunk || isFriendlyShip || isMiss;
+    // Radar glow only on enemy waters for hit/miss/skull cells, never on friendly grid
+    const shouldGlow = isComputerGrid && move;
     if (shouldGlow) {
       baseClass += isSunk ? ' radar-glow-sunk' : ' radar-glow';
     }
@@ -500,27 +496,24 @@ function App() {
         </div>
       </div>
 
-      {/* Win Screen Modal */}
+      {/* Win Screen Banner */}
       {gamePhase === GAME_PHASES.GAME_OVER && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="operations-panel rounded-2xl p-8 max-w-md mx-4 text-center transform scale-100">
-            <div className="text-6xl mb-4">
-              {winner === 'player' ? '🎉' : '💥'}
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-auto max-w-lg">
+          <div className="operations-panel rounded-2xl p-4 text-center border-2 border-green-500/50 shadow-2xl">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <span className="text-3xl">{winner === 'player' ? '🎉' : '💥'}</span>
+              <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
+                {winner === 'player' ? 'VICTORY' : 'DEFEAT'}
+              </h2>
             </div>
-            <h2 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-cyan-400">
-              {winner === 'player' ? 'VICTORY' : 'DEFEAT'}
-            </h2>
-            <p className="text-green-200 text-lg mb-6">
+            <p className="text-green-200 text-sm mb-3">
               {winner === 'player' 
-                ? 'You have destroyed the enemy fleet!' 
+                ? 'Enemy fleet destroyed — well done, Admiral!' 
                 : 'Your fleet has been destroyed...'}
             </p>
-            <div className="text-sm text-green-400 mb-6 font-mono">
-              v{APP_VERSION}
-            </div>
             <button
               onClick={resetGame}
-              className="tactical-button px-8 py-3 rounded-lg text-lg font-bold"
+              className="tactical-button px-6 py-2 rounded-lg text-sm font-bold"
             >
               🎯 NEW MISSION
             </button>
