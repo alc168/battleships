@@ -1,28 +1,42 @@
 # Battleships
 
-A modern, elegant implementation of the classic Battleships naval combat game built with React, Vite, and Tailwind CSS.
+A modern, polished implementation of the classic naval combat game built with React, Vite, and Tailwind CSS. Play directly in your browser against a smart computer opponent.
 
 ## Features
 
-- **Interactive Gameplay**: Place your ships strategically on a 10x10 grid and battle against the computer
-- **Smart AI**: Computer opponent with random ship placement and attack strategy
-- **Clean UI**: Modern, responsive design with smooth animations and visual feedback
-- **Simple State Management**: Built with React Hooks for maintainable, readable code
-- **Production Ready**: Optimized build with Vite for fast loading and performance
+- **Interactive Gameplay**: Place your fleet on a 10x10 grid and battle the computer
+- **Smart AI Opponent**: Once the AI hits a ship, it will hunt adjacent cells to sink it before firing randomly again
+- **Operations Room UI**: Tactical green-on-dark naval theme with animated radar sweep on enemy waters
+- **Visual Ship Icons**: Each ship is represented by a block icon sized to its length in the status panel and legend
+- **Sunk Ship Wreckage**: Sunk ships display skulls and dark red radar glow to mark destroyed vessels
+- **Win Banner**: Non-blocking victory/defeat banner keeps the final board state visible
+- **On-Screen Instructions**: A prompt appears when the firing phase begins
+- **Responsive Single-Screen Layout**: Designed to fit without scrolling on typical screens
 
 ## How to Play
 
-1. **Ship Placement**: Click on the grid to place your 5 ships (Carrier, Battleship, Cruiser, Submarine, Destroyer)
-2. **Orientation**: Toggle between horizontal and vertical placement using the orientation button
-3. **Attack**: Once all ships are placed, click on the computer's grid to attack
-4. **Win Condition**: Sink all enemy ships before they sink yours!
+1. **Ship Placement**: Click on the "Friendly Waters" grid to place your 5 ships:
+   - Carrier (5), Battleship (4), Cruiser (3), Submarine (3), Destroyer (2)
+2. **Orientation**: Use the **HORIZ / VERT** button to toggle placement direction
+3. **Start Game**: Once your fleet is deployed, the enemy ships are placed automatically
+4. **Attack**: When you see the prompt "🎯 Click any square to fire a missile", click a square in the "Enemy Waters" grid
+5. **Win Condition**: Sink every enemy ship before the computer sinks yours!
+
+## Game Controls
+
+| Control | Description |
+|---------|-------------|
+| Grid click (placement) | Place the currently selected ship |
+| HORIZ / VERT button | Toggle ship orientation |
+| Grid click (battle) | Fire a missile at that cell |
+| RESET / NEW MISSION | Restart the game |
 
 ## Tech Stack
 
-- **React 19**: Modern React with latest features
-- **Vite**: Lightning-fast build tool and dev server
-- **Tailwind CSS**: Utility-first CSS for rapid UI development
-- **React Hooks**: Simple state management without complex libraries
+- **React 19**: Modern React with Hooks for state management
+- **Vite**: Fast build tool and dev server
+- **Tailwind CSS**: Utility-first CSS for responsive styling
+- **CSS Animations**: Radar sweep, hit/miss flashes, and ship status effects
 
 ## Getting Started
 
@@ -44,24 +58,31 @@ npm run preview
 
 ```
 src/
-├── App.jsx          # Main game component
-├── constants.js     # Game constants and configuration
-├── utils.js         # Game logic and utility functions
+├── App.jsx          # Main game component and UI
+├── constants.js     # Game constants, ships, and version
+├── utils.js         # Grid creation, placement, attack, and AI logic
 ├── main.jsx         # Application entry point
-└── index.css        # Tailwind CSS imports
+└── index.css        # Tailwind imports and custom animations
 ```
 
 ## Game Logic
 
-The game uses simple, elegant data structures:
-- **Grid**: 10x10 array representing the game board
+- **Grid**: 10x10 array representing each board
 - **Cell States**: Empty, Ship, Hit, Miss, Sunk
 - **Game Phases**: Placement, Playing, Game Over
-- **Ship Configuration**: Array of ship objects with name and size
+- **Ships**: Array of ship objects with name and size, tracked for placement and sinking
+- **AI**: Maintains a queue of hunt targets after each successful hit to sink ships efficiently
 
 ## Deployment
 
-This project is designed for easy deployment to Vercel, Netlify, or GitHub Pages. The build output is optimized for static hosting.
+The project is configured for static hosting on **GitHub Pages** via `gh-pages`.
+
+```bash
+npm run build
+npm run deploy
+```
+
+The live game can also be deployed to Vercel, Netlify, or any static host by serving the `dist/` directory.
 
 ## License
 

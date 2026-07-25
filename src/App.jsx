@@ -1,9 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { GAME_PHASES, ORIENTATIONS, SHIPS, CELL_STATES, GRID_SIZE, APP_VERSION } from './constants.js';
 import { 
   createEmptyGrid, 
   isValidPlacement, 
-  placeShip, 
   placeShipWithTracking,
   processAttack, 
   checkWinCondition,
@@ -14,6 +13,7 @@ import {
 import './index.css';
 
 function App() {
+  // Core game state: placement grid, enemy grid, and turn management
   const [gamePhase, setGamePhase] = useState(GAME_PHASES.PLACEMENT);
   const [playerGrid, setPlayerGrid] = useState(createEmptyGrid());
   const [computerGrid, setComputerGrid] = useState(createEmptyGrid());
@@ -21,15 +21,22 @@ function App() {
   const [orientation, setOrientation] = useState(ORIENTATIONS.HORIZONTAL);
   const [isPlayerTurn, setIsPlayerTurn] = useState(true);
   const [winner, setWinner] = useState(null);
+
+  // Move tracking and ship status for both sides
   const [playerMoves, setPlayerMoves] = useState([]);
   const [computerMoves, setComputerMoves] = useState([]);
   const [playerSunkShips, setPlayerSunkShips] = useState([]);
   const [computerSunkShips, setComputerSunkShips] = useState([]);
+
+  // Ship placement tracking and positions
   const [playerPlacedShips, setPlayerPlacedShips] = useState([]);
   const [playerShipPositions, setPlayerShipPositions] = useState([]);
   const [computerShipPositions, setComputerShipPositions] = useState([]);
+
+  // Smart AI state: stores adjacent cells to try after a hit
   const [computerHuntTargets, setComputerHuntTargets] = useState([]);
 
+  // Route grid clicks to placement or attack handlers based on game phase
   const handleCellClick = (row, col) => {
     if (gamePhase === GAME_PHASES.PLACEMENT) {
       handlePlacement(row, col);
@@ -38,6 +45,7 @@ function App() {
     }
   };
 
+  // Place the current ship on the player grid and advance to the next one
   const handlePlacement = (row, col) => {
     const ship = SHIPS[currentShipIndex];
     
@@ -56,6 +64,7 @@ function App() {
     }
   };
 
+  // Randomly place enemy ships and start the playing phase
   const startGame = () => {
     const result = placeShipsRandomlyWithTracking(createEmptyGrid());
     setComputerGrid(result.grid);
@@ -63,8 +72,9 @@ function App() {
     setGamePhase(GAME_PHASES.PLAYING);
   };
 
+  // Process a player missile strike, update enemy grid, then hand over to the AI
   const handlePlayerAttack = (row, col) => {
-    // Check if already attacked
+    // Ignore repeated clicks on the same cell
     if (playerMoves.some(move => move.row === row && move.col === col)) {
       return;
     }
@@ -93,6 +103,7 @@ function App() {
     }, 500);
   };
 
+  // Determine whether a given grid cell belongs to a fully sunk ship
   const isCellOfSunkShip = (isComputerGrid, row, col) => {
     if (isComputerGrid) {
       return computerShipPositions.some(ship => 
@@ -107,6 +118,7 @@ function App() {
     }
   };
 
+  // Return the four orthogonal neighbours of a cell, filtering out invalid bounds
   const getAdjacentCells = (row, col) => {
     const adjacent = [];
     if (row > 0) adjacent.push({ row: row - 1, col });
@@ -116,6 +128,7 @@ function App() {
     return adjacent;
   };
 
+  // Pick the next cells to target based on the direction of recent unsunk hits
   const getHuntDirectionTargets = (row, col) => {
     // Look at recent hits to determine ship direction
     const recentHits = computerMoves.filter(move => move.hit && !isCellOfSunkShip(false, move.row, move.col));
@@ -146,6 +159,7 @@ function App() {
     return getAdjacentCells(row, col);
   };
 
+  // Computer turn: hunt a known hit, otherwise fire randomly
   const handleComputerAttack = () => {
     let row, col;
     
@@ -234,6 +248,7 @@ function App() {
     setComputerHuntTargets([]);
   };
 
+  // Build the CSS classes for a grid cell based on its contents and owner
   const getCellClass = (cellState, isComputerGrid, row, col) => {
     let baseClass = 'w-6 h-6 border flex items-center justify-center cursor-pointer relative overflow-hidden';
     const isSunk = isCellOfSunkShip(isComputerGrid, row, col);
@@ -279,6 +294,7 @@ function App() {
     return baseClass;
   };
 
+  // Return the icon content (miss marker or skull) for a grid cell
   const getCellContent = (cellState, isComputerGrid, row, col) => {
     const isSunk = isCellOfSunkShip(isComputerGrid, row, col);
     
@@ -302,6 +318,7 @@ function App() {
     return null;
   };
 
+  // Render a complete 10x10 grid with coordinates and optional radar sweep
   const renderGrid = (grid, isComputerGrid) => {
     return (
       <div className="flex flex-col gap-0.5">
@@ -345,6 +362,7 @@ function App() {
     );
   };
 
+  // Render a visual ship icon made of squares sized to the ship length
   const renderShipIcon = (size, isSunk) => {
     const squares = Array.from({ length: size }, (_, i) => (
       <div 
@@ -359,6 +377,7 @@ function App() {
     );
   };
 
+  // Render the fleet status panel showing each ship's operational state
   const renderShipStatus = (ships, sunkShips, placedShips, isPlayer) => {
     return (
       <div className="operations-panel rounded-lg p-2">
@@ -468,6 +487,11 @@ function App() {
             <h3 className="text-sm font-semibold text-green-400 uppercase tracking-wider">
               Enemy Waters
             </h3>
+            {gamePhase === GAME_PHASES.PLAYING && playerMoves.length === 0 && (
+              <div className="text-xs text-green-300 bg-gray-800/80 px-3 py-1 rounded border border-green-500/30 animate-pulse">
+                🎯 Click any square to fire a missile
+              </div>
+            )}
             {renderGrid(computerGrid, true)}
             {renderShipStatus(SHIPS, computerSunkShips, gamePhase === GAME_PHASES.PLAYING ? SHIPS.map(s => s.name) : [], false)}
           </div>
@@ -476,7 +500,7 @@ function App() {
       
       {/* Legend */}
       <div className="h-12 flex items-center justify-center gap-4 operations-panel rounded-lg px-4">
-        {SHIPS.map((ship, index) => (
+        {SHIPS.map((ship) => (
           <div key={`legend-${ship.name}`} className="flex items-center gap-1">
             {renderShipIcon(ship.size, false)}
             <span className="text-green-300 text-xs">{ship.name}</span>
