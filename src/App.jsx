@@ -43,28 +43,13 @@ function App() {
     if (isValidPlacement(playerGrid, ship, row, col, orientation)) {
       const result = placeShipWithTracking(playerGrid, ship, row, col, orientation, playerShipPositions);
       
-      console.log('Setting new grid state:', result.grid);
-      console.log('Setting new ship positions:', result.shipPositions);
-      console.log('Current placed ships before update:', playerPlacedShips);
-      
-      // Update all state together
       setPlayerGrid(result.grid);
       setPlayerShipPositions(result.shipPositions);
-      setPlayerPlacedShips(prev => {
-        const newPlaced = [...prev, ship.name];
-        console.log('New placed ships:', newPlaced);
-        return newPlaced;
-      });
+      setPlayerPlacedShips(prev => [...prev, ship.name]);
       
       if (currentShipIndex < SHIPS.length - 1) {
-        setCurrentShipIndex(prev => {
-          const newIndex = prev + 1;
-          console.log('New currentShipIndex:', newIndex);
-          return newIndex;
-        });
+        setCurrentShipIndex(prev => prev + 1);
       } else {
-        // All ships placed, start computer placement and game
-        console.log('Starting game');
         startGame();
       }
     }
@@ -84,11 +69,13 @@ function App() {
     }
 
     const { grid: newComputerGrid, hit } = processAttack(computerGrid, row, col);
+    const updatedMoves = [...playerMoves, { row, col, hit }];
+    
     setComputerGrid(newComputerGrid);
-    setPlayerMoves([...playerMoves, { row, col, hit }]);
+    setPlayerMoves(updatedMoves);
 
-    // Check for newly sunk ships using ship positions
-    const newSunkShips = checkSunkShips(computerShipPositions, playerMoves);
+    // Check for newly sunk ships using updated moves (including this hit)
+    const newSunkShips = checkSunkShips(computerShipPositions, updatedMoves);
     setComputerSunkShips(newSunkShips);
 
     if (checkWinCondition(newComputerGrid)) {
@@ -121,11 +108,13 @@ function App() {
     }
 
     const { grid: newPlayerGrid, hit } = processAttack(playerGrid, row, col);
+    const updatedMoves = [...computerMoves, { row, col, hit }];
+    
     setPlayerGrid(newPlayerGrid);
-    setComputerMoves([...computerMoves, { row, col, hit }]);
+    setComputerMoves(updatedMoves);
 
-    // Check for newly sunk ships using ship positions
-    const newSunkShips = checkSunkShips(playerShipPositions, computerMoves);
+    // Check for newly sunk ships using updated moves (including this hit)
+    const newSunkShips = checkSunkShips(playerShipPositions, updatedMoves);
     setPlayerSunkShips(newSunkShips);
 
     if (checkWinCondition(newPlayerGrid)) {
@@ -154,23 +143,49 @@ function App() {
     setComputerShipPositions([]);
   };
 
+  const isCellOfSunkShip = (isComputerGrid, row, col) => {
+    if (isComputerGrid) {
+      return computerShipPositions.some(ship => 
+        computerSunkShips.includes(ship.name) &&
+        ship.positions.some(pos => pos.row === row && pos.col === col)
+      );
+    } else {
+      return playerShipPositions.some(ship => 
+        playerSunkShips.includes(ship.name) &&
+        ship.positions.some(pos => pos.row === row && pos.col === col)
+      );
+    }
+  };
+
   const getCellClass = (cellState, isComputerGrid, row, col) => {
     let baseClass = 'w-6 h-6 border flex items-center justify-center cursor-pointer relative overflow-hidden';
+    const isSunk = isCellOfSunkShip(isComputerGrid, row, col);
     
     if (isComputerGrid) {
       const move = playerMoves.find(m => m.row === row && m.col === col);
       if (move) {
-        baseClass += move.hit ? ' hit-cell border-red-500' : ' miss-cell border-yellow-400';
+        if (isSunk) {
+          baseClass += ' sunk-cell border-red-700';
+        } else if (move.hit) {
+          baseClass += ' hit-cell border-red-500';
+        } else {
+          baseClass += ' miss-cell border-yellow-400';
+        }
       } else {
         baseClass += ' tactical-cell border-green-600/30';
       }
     } else {
       const move = computerMoves.find(m => m.row === row && m.col === col);
       if (move) {
-        baseClass += move.hit ? ' hit-cell border-red-500' : ' miss-cell border-yellow-400';
+        if (isSunk) {
+          baseClass += ' sunk-cell border-red-700';
+        } else if (move.hit) {
+          baseClass += ' hit-cell border-red-500';
+        } else {
+          baseClass += ' miss-cell border-yellow-400';
+        }
       } else if (cellState === CELL_STATES.SHIP) {
         baseClass += ' ship-cell border-gray-500';
-        console.log(`Ship cell at ${row},${col}`);
       } else {
         baseClass += ' tactical-cell border-green-600/30';
       }
@@ -180,42 +195,29 @@ function App() {
   };
 
   const getCellContent = (cellState, isComputerGrid, row, col) => {
+    const isSunk = isCellOfSunkShip(isComputerGrid, row, col);
+    
     if (isComputerGrid) {
       const move = playerMoves.find(m => m.row === row && m.col === col);
       if (move && !move.hit) {
         return <span className="text-yellow-900 font-bold text-sm">×</span>;
       }
-      // Check if this cell belongs to a sunk ship
-      if (move && move.hit && computerSunkShips.length > 0) {
-        const sunkShip = computerShipPositions.find(ship => 
-          computerSunkShips.includes(ship.name) && 
-          ship.positions.some(pos => pos.row === row && pos.col === col)
-        );
-        if (sunkShip) {
-          return <span className="skull-icon">☠</span>;
-        }
+      if (move && move.hit && isSunk) {
+        return <span className="skull-icon">☠</span>;
       }
     } else {
       const move = computerMoves.find(m => m.row === row && m.col === col);
       if (move && !move.hit) {
         return <span className="text-yellow-900 font-bold text-sm">×</span>;
       }
-      // Check if this cell belongs to a sunk ship
-      if (move && move.hit && playerSunkShips.length > 0) {
-        const sunkShip = playerShipPositions.find(ship => 
-          playerSunkShips.includes(ship.name) && 
-          ship.positions.some(pos => pos.row === row && pos.col === col)
-        );
-        if (sunkShip) {
-          return <span className="skull-icon">☠</span>;
-        }
+      if (move && move.hit && isSunk) {
+        return <span className="skull-icon">☠</span>;
       }
     }
     return null;
   };
 
   const renderGrid = (grid, isComputerGrid) => {
-    console.log('Rendering grid:', { isComputerGrid, gridSample: grid[0] });
     return (
       <div className="flex flex-col gap-0.5">
         {/* Column headers */}
@@ -259,7 +261,6 @@ function App() {
   };
 
   const renderShipStatus = (ships, sunkShips, placedShips, isPlayer) => {
-    console.log('Ship status render:', { placedShips, sunkShips, isPlayer });
     return (
       <div className="operations-panel rounded-lg p-2">
         <h3 className="text-xs font-semibold text-green-400 mb-2 uppercase tracking-wider">
@@ -273,8 +274,6 @@ function App() {
             let status = 'pending';
             if (isSunk) status = 'sunk';
             else if (isPlaced) status = 'operational';
-            
-            console.log(`Ship ${ship.name}: status=${status}, isPlaced=${isPlaced}`);
             
             return (
               <div key={`${isPlayer ? 'player' : 'enemy'}-${index}-${ship.name}-${status}`} className={`ship-status-compact ${status}`}>
