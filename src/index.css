@@ -52,6 +52,15 @@
     z-index: 10;
   }
 
+  .enemy-ship-revealed {
+    @apply bg-gradient-to-br from-blue-700 to-blue-900 border-blue-500;
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.4),
+      0 0 10px rgba(59, 130, 246, 0.4);
+    position: relative;
+    z-index: 10;
+  }
+
   .hit-cell {
     @apply bg-gradient-to-br from-red-600 to-red-800 border-red-500;
     animation: hitFlash 0.3s ease-out;

@@ -291,6 +291,9 @@ function App() {
         } else {
           baseClass += ' miss-cell border-yellow-400';
         }
+      } else if (gamePhase === GAME_PHASES.GAME_OVER && winner === 'computer' && cellState === CELL_STATES.SHIP) {
+        // Reveal any enemy ships that survived the battle after a defeat
+        baseClass += ' enemy-ship-revealed border-blue-500';
       } else {
         baseClass += ' tactical-cell border-green-600/30';
       }
