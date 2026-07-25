@@ -4,110 +4,148 @@
 
 @layer base {
   body {
-    @apply bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800;
+    @apply bg-gray-900 overflow-hidden;
   }
 }
 
 @layer components {
-  .ocean-grid {
-    @apply bg-gradient-to-br from-blue-400/20 to-blue-600/30 backdrop-blur-sm;
+  .operations-room {
+    @apply bg-gradient-to-br from-gray-900 via-green-950 to-gray-900;
+    background-image: 
+      radial-gradient(circle at 20% 80%, rgba(34, 197, 94, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(34, 197, 94, 0.05) 0%, transparent 50%);
+  }
+
+  .radar-grid {
+    @apply bg-green-950/30 border-green-500/30;
+    background-image: 
+      linear-gradient(rgba(34, 197, 94, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34, 197, 94, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
     box-shadow: 
-      0 0 20px rgba(59, 130, 246, 0.3),
-      inset 0 0 30px rgba(59, 130, 246, 0.1);
+      0 0 30px rgba(34, 197, 94, 0.2),
+      inset 0 0 50px rgba(34, 197, 94, 0.1);
   }
 
-  .water-cell {
-    @apply bg-gradient-to-br from-blue-300/40 to-blue-500/40 border-blue-400/50;
-    transition: all 0.3s ease;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  .tactical-cell {
+    @apply bg-green-950/40 border-green-600/30;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
-  .water-cell::before {
-    content: '';
-    @apply absolute inset-0 bg-gradient-to-t from-blue-400/20 to-transparent;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .water-cell:hover::before {
-    opacity: 1;
-  }
-
-  .water-cell:hover {
-    @apply from-blue-300/60 to-blue-500/60;
-    transform: scale(1.05);
+  .tactical-cell:hover {
+    @apply bg-green-900/50 border-green-500/50;
     box-shadow: 
-      inset 0 2px 4px rgba(0, 0, 0, 0.1),
-      0 0 15px rgba(59, 130, 246, 0.5);
+      inset 0 1px 3px rgba(0, 0, 0, 0.3),
+      0 0 10px rgba(34, 197, 94, 0.3);
   }
 
   .ship-cell {
     @apply bg-gradient-to-br from-gray-600 to-gray-800 border-gray-500;
     box-shadow: 
-      inset 0 2px 4px rgba(0, 0, 0, 0.3),
-      0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-
-  .ship-cell::before {
-    content: '';
-    @apply absolute inset-0 bg-gradient-to-t from-gray-400/20 to-transparent;
-    border-radius: inherit;
+      inset 0 2px 4px rgba(0, 0, 0, 0.4),
+      0 1px 2px rgba(255, 255, 255, 0.1);
   }
 
   .hit-cell {
-    @apply bg-gradient-to-br from-red-500 to-red-700 border-red-400;
-    animation: hitPulse 0.5s ease-out;
+    @apply bg-gradient-to-br from-red-600 to-red-800 border-red-500;
+    animation: hitFlash 0.3s ease-out;
     box-shadow: 
-      0 0 20px rgba(239, 68, 68, 0.6),
-      inset 0 0 10px rgba(239, 68, 68, 0.4);
+      0 0 15px rgba(239, 68, 68, 0.6),
+      inset 0 0 8px rgba(239, 68, 68, 0.4);
   }
 
   .miss-cell {
-    @apply bg-gradient-to-br from-blue-300/60 to-blue-400/60 border-blue-300;
-    animation: missRipple 0.4s ease-out;
+    @apply bg-gradient-to-br from-yellow-500 to-orange-500 border-yellow-400;
+    animation: splash 0.4s ease-out;
     box-shadow: 
-      0 0 10px rgba(59, 130, 246, 0.4),
-      inset 0 0 5px rgba(59, 130, 246, 0.2);
+      0 0 12px rgba(234, 179, 8, 0.5),
+      inset 0 0 6px rgba(234, 179, 8, 0.3);
   }
 
-  .glass-panel {
-    @apply bg-white/10 backdrop-blur-md border border-white/20;
+  .skull-icon {
+    @apply text-red-500 font-bold text-xs;
+    animation: skullPulse 1s ease-in-out infinite;
+  }
+
+  @keyframes skullPulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.1);
+    }
+  }
+
+  .sunk-cell {
+    @apply bg-gradient-to-br from-red-900 to-gray-900 border-red-700;
+    animation: sunkRadar 2s ease-in-out infinite;
     box-shadow: 
-      0 8px 32px rgba(0, 0, 0, 0.3),
+      0 0 20px rgba(239, 68, 68, 0.4),
+      inset 0 0 10px rgba(239, 68, 68, 0.2);
+  }
+
+  .operations-panel {
+    @apply bg-gray-800/80 backdrop-blur-sm border border-green-500/30;
+    box-shadow: 
+      0 4px 20px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(34, 197, 94, 0.1);
+  }
+
+  .tactical-button {
+    @apply bg-gradient-to-r from-green-700 to-green-800 hover:from-green-600 hover:to-green-700;
+    @apply text-green-100 font-medium shadow-lg;
+    @apply transition-all duration-200;
+    box-shadow: 
+      0 2px 10px rgba(34, 197, 94, 0.3),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
-  .naval-button {
-    @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600;
-    @apply text-white font-medium shadow-lg hover:shadow-xl;
-    @apply transition-all duration-300 transform hover:scale-105;
+  .tactical-button:hover {
     box-shadow: 
-      0 4px 15px rgba(37, 99, 235, 0.4),
+      0 4px 15px rgba(34, 197, 94, 0.4),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   .radar-sweep {
-    animation: radarSweep 4s linear infinite;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      rgba(34, 197, 94, 0.1) 60deg,
+      transparent 60deg
+    );
+    animation: radarSpin 4s linear infinite;
+    border-radius: inherit;
+    pointer-events: none;
   }
 
-  @keyframes hitPulse {
+  .radar-blip {
+    animation: blip 1.5s ease-in-out infinite;
+  }
+
+  @keyframes hitFlash {
     0% {
       transform: scale(1);
-      opacity: 1;
+      filter: brightness(1);
     }
     50% {
-      transform: scale(1.2);
-      opacity: 0.8;
+      transform: scale(1.1);
+      filter: brightness(1.5);
     }
     100% {
       transform: scale(1);
-      opacity: 1;
+      filter: brightness(1);
     }
   }
 
-  @keyframes missRipple {
+  @keyframes splash {
     0% {
-      transform: scale(0.8);
+      transform: scale(0.5);
       opacity: 0.5;
     }
     100% {
@@ -116,7 +154,20 @@
     }
   }
 
-  @keyframes radarSweep {
+  @keyframes sunkRadar {
+    0%, 100% {
+      box-shadow: 
+        0 0 15px rgba(239, 68, 68, 0.4),
+        inset 0 0 8px rgba(239, 68, 68, 0.2);
+    }
+    50% {
+      box-shadow: 
+        0 0 25px rgba(239, 68, 68, 0.6),
+        inset 0 0 12px rgba(239, 68, 68, 0.3);
+    }
+  }
+
+  @keyframes radarSpin {
     0% {
       transform: rotate(0deg);
     }
@@ -125,81 +176,53 @@
     }
   }
 
-  @keyframes wave {
+  @keyframes blip {
     0%, 100% {
-      transform: translateY(0);
+      opacity: 1;
+      transform: scale(1);
     }
     50% {
-      transform: translateY(-5px);
+      opacity: 0.7;
+      transform: scale(1.1);
     }
   }
 
-  .wave-animation {
-    animation: wave 3s ease-in-out infinite;
+  .ship-status-compact {
+    @apply flex items-center gap-2 px-2 py-1 rounded text-xs;
+    @apply bg-gray-800/50 border border-gray-600/30;
+    transition: all 0.2s ease;
   }
 
-  .ship-status-item {
-    @apply flex items-center gap-3 p-3 rounded-lg;
-    @apply bg-white/5 border border-white/10;
-    @apply transition-all duration-300;
+  .ship-status-compact.pending {
+    @apply border-yellow-600/50 text-yellow-400;
   }
 
-  .ship-status-item:hover {
-    @apply bg-white/10 border-white/20;
+  .ship-status-compact.operational {
+    @apply border-green-600/50 text-green-400;
   }
 
-  .ship-sunk {
-    @apply opacity-50 line-through;
-  }
-
-  .ship-icon {
-    @apply w-8 h-8 rounded;
-    @apply bg-gradient-to-br from-gray-600 to-gray-800;
-    @apply shadow-lg;
+  .ship-status-compact.sunk {
+    @apply border-red-600/50 text-red-400 opacity-60;
   }
 
   .coordinate-label {
-    @apply text-xs font-mono text-blue-300/70 font-bold;
+    @apply text-xs font-mono text-green-400/60 font-bold;
   }
 
-  .explosion {
-    animation: explode 0.6s ease-out forwards;
+  .screen-fit {
+    @apply h-screen p-4 flex flex-col;
   }
 
-  @keyframes explode {
-    0% {
-      transform: scale(0);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.5);
-      opacity: 0.8;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
+  .game-area {
+    @apply flex-1 flex items-center justify-center gap-6;
   }
 
-  .sonar-ping {
-    animation: sonar 2s ease-in-out infinite;
+  .status-bar {
+    @apply h-16 flex items-center justify-between px-4;
+    @apply operations-panel rounded-lg;
   }
 
-  @keyframes sonar {
-    0%, 100% {
-      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
-    }
-    50% {
-      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
-    }
-  }
-
-  .radar-line {
-    position: absolute;
-    width: 2px;
-    height: 100%;
-    background: linear-gradient(to top, transparent, rgba(59, 130, 246, 0.5), transparent);
-    animation: radarSweep 4s linear infinite;
-    transform-origin: bottom center;
+  .header-compact {
+    @apply text-center py-2;
   }
 }

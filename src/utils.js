@@ -42,6 +42,24 @@ export const placeShip = (grid, ship, row, col, orientation) => {
   return newGrid;
 };
 
+export const placeShipWithTracking = (grid, ship, row, col, orientation, shipPositions) => {
+  const newGrid = grid.map(row => [...row]);
+  const { size, name } = ship;
+  const positions = [];
+  
+  for (let i = 0; i < size; i++) {
+    const placeRow = orientation === 'horizontal' ? row : row + i;
+    const placeCol = orientation === 'horizontal' ? col + i : col;
+    newGrid[placeRow][placeCol] = CELL_STATES.SHIP;
+    positions.push({ row: placeRow, col: placeCol });
+  }
+  
+  return { 
+    grid: newGrid, 
+    shipPositions: [...shipPositions, { name, positions }] 
+  };
+};
+
 export const processAttack = (grid, row, col) => {
   const newGrid = grid.map(row => [...row]);
   const cellState = newGrid[row][col];
@@ -99,4 +117,51 @@ export const placeShipsRandomly = (grid) => {
   }
   
   return newGrid;
+};
+
+export const placeShipsRandomlyWithTracking = (grid) => {
+  let newGrid = grid.map(row => [...row]);
+  let shipPositions = [];
+  
+  for (const ship of SHIPS) {
+    let placed = false;
+    let attempts = 0;
+    const maxAttempts = 100;
+    
+    while (!placed && attempts < maxAttempts) {
+      const { row, col } = getRandomPosition();
+      const orientation = getRandomOrientation();
+      
+      if (isValidPlacement(newGrid, ship, row, col, orientation)) {
+        const result = placeShipWithTracking(newGrid, ship, row, col, orientation, shipPositions);
+        newGrid = result.grid;
+        shipPositions = result.shipPositions;
+        placed = true;
+      }
+      
+      attempts++;
+    }
+    
+    if (!placed) {
+      console.error(`Could not place ${ship.name} after ${maxAttempts} attempts`);
+    }
+  }
+  
+  return { grid: newGrid, shipPositions };
+};
+
+export const checkSunkShips = (shipPositions, hits) => {
+  const sunkShips = [];
+  
+  for (const ship of shipPositions) {
+    const allPositionsHit = ship.positions.every(pos => 
+      hits.some(hit => hit.row === pos.row && hit.col === pos.col)
+    );
+    
+    if (allPositionsHit) {
+      sunkShips.push(ship.name);
+    }
+  }
+  
+  return sunkShips;
 };
