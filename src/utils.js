@@ -154,6 +154,40 @@ export const placeShipsRandomlyWithTracking = (grid) => {
   return { grid: newGrid, shipPositions };
 };
 
+export const placeRemainingShipsRandomly = (grid, shipPositions, startIndex) => {
+  let newGrid = grid.map(row => [...row]);
+  let newShipPositions = [...shipPositions];
+  const placedShipNames = [];
+  
+  for (let i = startIndex; i < SHIPS.length; i++) {
+    const ship = SHIPS[i];
+    let placed = false;
+    let attempts = 0;
+    const maxAttempts = 100;
+    
+    while (!placed && attempts < maxAttempts) {
+      const { row, col } = getRandomPosition();
+      const orientation = getRandomOrientation();
+      
+      if (isValidPlacement(newGrid, ship, row, col, orientation)) {
+        const result = placeShipWithTracking(newGrid, ship, row, col, orientation, newShipPositions);
+        newGrid = result.grid;
+        newShipPositions = result.shipPositions;
+        placed = true;
+        placedShipNames.push(ship.name);
+      }
+      
+      attempts++;
+    }
+    
+    if (!placed) {
+      console.error(`Could not place ${ship.name} after ${maxAttempts} attempts`);
+    }
+  }
+  
+  return { grid: newGrid, shipPositions: newShipPositions, placedShipNames };
+};
+
 export const checkSunkShips = (shipPositions, hits) => {
   const sunkShips = [];
   

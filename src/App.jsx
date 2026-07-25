@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { GAME_PHASES, ORIENTATIONS, SHIPS, CELL_STATES, GRID_SIZE, APP_VERSION } from './constants.js';
 import { 
   createEmptyGrid, 
@@ -7,6 +7,7 @@ import {
   processAttack, 
   checkWinCondition,
   placeShipsRandomlyWithTracking,
+  placeRemainingShipsRandomly,
   getRandomPosition,
   checkSunkShips
 } from './utils.js';
@@ -36,6 +37,38 @@ function App() {
   // Smart AI state: stores adjacent cells to try after a hit
   const [computerHuntTargets, setComputerHuntTargets] = useState([]);
 
+  // Randomly place enemy ships and start the playing phase
+  const startGame = () => {
+    const result = placeShipsRandomlyWithTracking(createEmptyGrid());
+    setComputerGrid(result.grid);
+    setComputerShipPositions(result.shipPositions);
+    setGamePhase(GAME_PHASES.PLAYING);
+  };
+
+  // Keyboard shortcuts: R rotates orientation, Enter randomly places remaining ships
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (gamePhase !== GAME_PHASES.PLACEMENT) return;
+      
+      if (event.key === 'r' || event.key === 'R') {
+        setOrientation(prev => 
+          prev === ORIENTATIONS.HORIZONTAL ? ORIENTATIONS.VERTICAL : ORIENTATIONS.HORIZONTAL
+        );
+      }
+      
+      if (event.key === 'Enter') {
+        const result = placeRemainingShipsRandomly(playerGrid, playerShipPositions, currentShipIndex);
+        setPlayerGrid(result.grid);
+        setPlayerShipPositions(result.shipPositions);
+        setPlayerPlacedShips(prev => [...prev, ...result.placedShipNames]);
+        startGame();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [gamePhase, playerGrid, playerShipPositions, currentShipIndex]);
+
   // Route grid clicks to placement or attack handlers based on game phase
   const handleCellClick = (row, col) => {
     if (gamePhase === GAME_PHASES.PLACEMENT) {
@@ -62,14 +95,6 @@ function App() {
         startGame();
       }
     }
-  };
-
-  // Randomly place enemy ships and start the playing phase
-  const startGame = () => {
-    const result = placeShipsRandomlyWithTracking(createEmptyGrid());
-    setComputerGrid(result.grid);
-    setComputerShipPositions(result.shipPositions);
-    setGamePhase(GAME_PHASES.PLAYING);
   };
 
   // Process a player missile strike, update enemy grid, then hand over to the AI
@@ -469,6 +494,15 @@ function App() {
           )}
         </div>
       </div>
+      
+      {/* Placement Instructions */}
+      {gamePhase === GAME_PHASES.PLACEMENT && (
+        <div className="text-center py-1">
+          <span className="text-xs text-green-300 bg-gray-800/80 px-3 py-1 rounded border border-green-500/30 animate-pulse">
+            🎯 Place ships in Friendly Waters — R to rotate — Enter to randomize
+          </span>
+        </div>
+      )}
       
       {/* Game Area */}
       <div className="game-area">
