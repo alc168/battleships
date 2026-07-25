@@ -1,3 +1,205 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800;
+  }
+}
+
+@layer components {
+  .ocean-grid {
+    @apply bg-gradient-to-br from-blue-400/20 to-blue-600/30 backdrop-blur-sm;
+    box-shadow: 
+      0 0 20px rgba(59, 130, 246, 0.3),
+      inset 0 0 30px rgba(59, 130, 246, 0.1);
+  }
+
+  .water-cell {
+    @apply bg-gradient-to-br from-blue-300/40 to-blue-500/40 border-blue-400/50;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .water-cell::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-t from-blue-400/20 to-transparent;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .water-cell:hover::before {
+    opacity: 1;
+  }
+
+  .water-cell:hover {
+    @apply from-blue-300/60 to-blue-500/60;
+    transform: scale(1.05);
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.1),
+      0 0 15px rgba(59, 130, 246, 0.5);
+  }
+
+  .ship-cell {
+    @apply bg-gradient-to-br from-gray-600 to-gray-800 border-gray-500;
+    box-shadow: 
+      inset 0 2px 4px rgba(0, 0, 0, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .ship-cell::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-t from-gray-400/20 to-transparent;
+    border-radius: inherit;
+  }
+
+  .hit-cell {
+    @apply bg-gradient-to-br from-red-500 to-red-700 border-red-400;
+    animation: hitPulse 0.5s ease-out;
+    box-shadow: 
+      0 0 20px rgba(239, 68, 68, 0.6),
+      inset 0 0 10px rgba(239, 68, 68, 0.4);
+  }
+
+  .miss-cell {
+    @apply bg-gradient-to-br from-blue-300/60 to-blue-400/60 border-blue-300;
+    animation: missRipple 0.4s ease-out;
+    box-shadow: 
+      0 0 10px rgba(59, 130, 246, 0.4),
+      inset 0 0 5px rgba(59, 130, 246, 0.2);
+  }
+
+  .glass-panel {
+    @apply bg-white/10 backdrop-blur-md border border-white/20;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .naval-button {
+    @apply bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600;
+    @apply text-white font-medium shadow-lg hover:shadow-xl;
+    @apply transition-all duration-300 transform hover:scale-105;
+    box-shadow: 
+      0 4px 15px rgba(37, 99, 235, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+
+  .radar-sweep {
+    animation: radarSweep 4s linear infinite;
+  }
+
+  @keyframes hitPulse {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes missRipple {
+    0% {
+      transform: scale(0.8);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes radarSweep {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes wave {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .wave-animation {
+    animation: wave 3s ease-in-out infinite;
+  }
+
+  .ship-status-item {
+    @apply flex items-center gap-3 p-3 rounded-lg;
+    @apply bg-white/5 border border-white/10;
+    @apply transition-all duration-300;
+  }
+
+  .ship-status-item:hover {
+    @apply bg-white/10 border-white/20;
+  }
+
+  .ship-sunk {
+    @apply opacity-50 line-through;
+  }
+
+  .ship-icon {
+    @apply w-8 h-8 rounded;
+    @apply bg-gradient-to-br from-gray-600 to-gray-800;
+    @apply shadow-lg;
+  }
+
+  .coordinate-label {
+    @apply text-xs font-mono text-blue-300/70 font-bold;
+  }
+
+  .explosion {
+    animation: explode 0.6s ease-out forwards;
+  }
+
+  @keyframes explode {
+    0% {
+      transform: scale(0);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.5);
+      opacity: 0.8;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .sonar-ping {
+    animation: sonar 2s ease-in-out infinite;
+  }
+
+  @keyframes sonar {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+  }
+
+  .radar-line {
+    position: absolute;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(to top, transparent, rgba(59, 130, 246, 0.5), transparent);
+    animation: radarSweep 4s linear infinite;
+    transform-origin: bottom center;
+  }
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { GAME_PHASES, ORIENTATIONS, SHIPS, CELL_STATES, GRID_SIZE } from './constants.js';
 import { 
   createEmptyGrid, 
@@ -21,6 +21,8 @@ function App() {
   const [winner, setWinner] = useState(null);
   const [playerMoves, setPlayerMoves] = useState([]);
   const [computerMoves, setComputerMoves] = useState([]);
+  const [playerSunkShips, setPlayerSunkShips] = useState([]);
+  const [computerSunkShips, setComputerSunkShips] = useState([]);
 
   const handleCellClick = (row, col) => {
     if (gamePhase === GAME_PHASES.PLACEMENT) {
@@ -62,6 +64,10 @@ function App() {
     setComputerGrid(newComputerGrid);
     setPlayerMoves([...playerMoves, { row, col, hit }]);
 
+    // Check for newly sunk ships
+    const newSunkShips = checkSunkShips(newComputerGrid, computerSunkShips);
+    setComputerSunkShips(newSunkShips);
+
     if (checkWinCondition(newComputerGrid)) {
       setWinner('player');
       setGamePhase(GAME_PHASES.GAME_OVER);
@@ -95,6 +101,10 @@ function App() {
     setPlayerGrid(newPlayerGrid);
     setComputerMoves([...computerMoves, { row, col, hit }]);
 
+    // Check for newly sunk ships
+    const newSunkShips = checkSunkShips(newPlayerGrid, playerSunkShips);
+    setPlayerSunkShips(newSunkShips);
+
     if (checkWinCondition(newPlayerGrid)) {
       setWinner('computer');
       setGamePhase(GAME_PHASES.GAME_OVER);
@@ -102,6 +112,27 @@ function App() {
     }
 
     setIsPlayerTurn(true);
+  };
+
+  const checkSunkShips = (grid, alreadySunk) => {
+    const newlySunk = [];
+    const hitCount = grid.flat().filter(cell => cell === CELL_STATES.HIT).length;
+    
+    // Simplified ship sinking logic based on hit count
+    // This is a reasonable approximation for the simple data structure
+    const shipsBySize = [...SHIPS].sort((a, b) => a.size - b.size);
+    let remainingHits = hitCount;
+    
+    for (const ship of shipsBySize) {
+      if (alreadySunk.includes(ship.name)) continue;
+      
+      if (remainingHits >= ship.size) {
+        newlySunk.push(ship.name);
+        remainingHits -= ship.size;
+      }
+    }
+    
+    return [...alreadySunk, ...newlySunk];
   };
 
   const resetGame = () => {
@@ -114,26 +145,28 @@ function App() {
     setWinner(null);
     setPlayerMoves([]);
     setComputerMoves([]);
+    setPlayerSunkShips([]);
+    setComputerSunkShips([]);
   };
 
   const getCellClass = (cellState, isComputerGrid, row, col) => {
-    let baseClass = 'w-8 h-8 border border-gray-300 flex items-center justify-center cursor-pointer transition-all duration-200';
+    let baseClass = 'w-8 h-8 border flex items-center justify-center cursor-pointer relative overflow-hidden';
     
     if (isComputerGrid) {
       const move = playerMoves.find(m => m.row === row && m.col === col);
       if (move) {
-        baseClass += move.hit ? ' bg-red-500 hover:bg-red-600' : ' bg-blue-300 hover:bg-blue-400';
+        baseClass += move.hit ? ' hit-cell border-red-400' : ' miss-cell border-blue-300';
       } else {
-        baseClass += ' bg-gray-50 hover:bg-gray-200';
+        baseClass += ' water-cell border-blue-400/50';
       }
     } else {
       const move = computerMoves.find(m => m.row === row && m.col === col);
       if (move) {
-        baseClass += move.hit ? ' bg-red-500 hover:bg-red-600' : ' bg-blue-300 hover:bg-blue-400';
+        baseClass += move.hit ? ' hit-cell border-red-400' : ' miss-cell border-blue-300';
       } else if (cellState === CELL_STATES.SHIP) {
-        baseClass += ' bg-gray-700 hover:bg-gray-800';
+        baseClass += ' ship-cell border-gray-500';
       } else {
-        baseClass += ' bg-gray-50 hover:bg-gray-200';
+        baseClass += ' water-cell border-blue-400/50';
       }
     }
     
@@ -142,30 +175,132 @@ function App() {
 
   const renderGrid = (grid, isComputerGrid) => {
     return (
-      <div className="grid grid-cols-10 gap-0 border-2 border-gray-400">
-        {grid.map((row, rowIndex) =>
-          row.map((cell, colIndex) => (
-            <div
-              key={`${rowIndex}-${colIndex}`}
-              className={getCellClass(cell, isComputerGrid, rowIndex, colIndex)}
-              onClick={() => handleCellClick(rowIndex, colIndex)}
-            />
-          ))
+      <div className="flex flex-col gap-1">
+        {/* Column headers */}
+        <div className="flex justify-center gap-1 mb-1">
+          <div className="w-8"></div> {/* Corner spacer */}
+          {Array.from({ length: GRID_SIZE }, (_, i) => (
+            <div key={`col-${i}`} className="coordinate-label text-center py-1 w-8">
+              {String.fromCharCode(65 + i)}
+            </div>
+          ))}
+        </div>
+        
+        <div className="flex gap-1">
+          {/* Row numbers */}
+          <div className="flex flex-col gap-1 mr-1">
+            {Array.from({ length: GRID_SIZE }, (_, i) => (
+              <div key={`row-${i}`} className="coordinate-label text-center py-2 w-8">
+                {i + 1}
+              </div>
+            ))}
+          </div>
+          
+          {/* Grid */}
+          <div className="grid grid-cols-10 gap-0 border-2 border-blue-400/50 rounded-lg overflow-hidden ocean-grid">
+            {grid.map((row, rowIndex) =>
+              row.map((cell, colIndex) => (
+                <div
+                  key={`${rowIndex}-${colIndex}`}
+                  className={getCellClass(cell, isComputerGrid, rowIndex, colIndex)}
+                  onClick={() => handleCellClick(rowIndex, colIndex)}
+                />
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderShipStatus = (ships, sunkShips, isPlayer) => {
+    const activeShips = ships.filter(ship => !sunkShips.includes(ship.name));
+    const destroyedShips = ships.filter(ship => sunkShips.includes(ship.name));
+    
+    return (
+      <div className="glass-panel rounded-xl p-4 mt-4">
+        <h3 className="text-lg font-semibold text-blue-200 mb-3">
+          {isPlayer ? '🫥 FLEET STATUS' : '🎯 ENEMY INTEL'}
+        </h3>
+        
+        {/* Active Ships */}
+        <div className="mb-4">
+          <div className="text-green-400 text-sm font-medium mb-2">
+            ● ACTIVE ({activeShips.length})
+          </div>
+          <div className="space-y-2">
+            {activeShips.map((ship) => (
+              <div key={ship.name} className="ship-status-item">
+                <div className="ship-icon flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">
+                    {ship.name.charAt(0)}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <div className="text-white font-medium">{ship.name}</div>
+                  <div className="text-blue-300 text-sm">Size: {ship.size}</div>
+                </div>
+                <div className="text-green-400 text-sm font-medium">
+                  OPERATIONAL
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Destroyed Ships */}
+        {destroyedShips.length > 0 && (
+          <div>
+            <div className="text-red-400 text-sm font-medium mb-2">
+              ☠ DESTROYED ({destroyedShips.length})
+            </div>
+            <div className="space-y-2">
+              {destroyedShips.map((ship) => (
+                <div key={ship.name} className="ship-status-item ship-sunk">
+                  <div className="ship-icon flex items-center justify-center opacity-50">
+                    <span className="text-white text-xs font-bold">
+                      {ship.name.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-white font-medium line-through">{ship.name}</div>
+                    <div className="text-blue-300 text-sm">Size: {ship.size}</div>
+                  </div>
+                  <div className="text-red-400 text-sm font-medium">
+                    SUNK
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <h1 className="text-5xl font-bold text-center text-gray-800 mb-2">Battleship</h1>
-        <p className="text-center text-gray-600 mb-8">Classic naval combat game</p>
+    <div className="min-h-screen py-8 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl wave-animation"></div>
+        <div className="absolute top-40 right-20 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl wave-animation" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-20 left-1/4 w-40 h-40 bg-blue-600/10 rounded-full blur-3xl wave-animation" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 relative z-10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 mb-2 wave-animation">
+            ⚓ BATTLESHIP ⚓
+          </h1>
+          <p className="text-blue-200 text-lg">Tactical Naval Combat System</p>
+        </div>
         
+        {/* Game Phase Panels */}
         {gamePhase === GAME_PHASES.PLACEMENT && (
-          <div className="text-center mb-6 bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">
-              Place your {SHIPS[currentShipIndex].name} (Size: {SHIPS[currentShipIndex].size})
+          <div className="text-center mb-6 glass-panel rounded-xl p-6 max-w-lg mx-auto">
+            <h2 className="text-2xl font-semibold text-blue-100 mb-4">
+              Deploy your {SHIPS[currentShipIndex].name} (Size: {SHIPS[currentShipIndex].size})
             </h2>
             <button
               onClick={() => setOrientation(
@@ -173,84 +308,96 @@ function App() {
                   ? ORIENTATIONS.VERTICAL 
                   : ORIENTATIONS.HORIZONTAL
               )}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-md hover:shadow-lg"
+              className="naval-button px-8 py-3 rounded-lg mb-4"
             >
-              Orientation: {orientation}
+              Orientation: {orientation === 'horizontal' ? '↔ Horizontal' : '↕ Vertical'}
             </button>
-            <p className="mt-3 text-gray-600">Click on the grid to place your ship</p>
-            <div className="mt-4 text-sm text-gray-500">
+            <p className="text-blue-200 mt-3">Click on the grid to deploy your vessel</p>
+            <div className="mt-4 text-sm text-blue-300">
               Ships remaining: {SHIPS.length - currentShipIndex}
             </div>
           </div>
         )}
 
         {gamePhase === GAME_PHASES.PLAYING && (
-          <div className="text-center mb-6 bg-white rounded-xl shadow-lg p-6 max-w-md mx-auto">
-            <h2 className="text-2xl font-semibold text-gray-700">
-              {isPlayerTurn ? "⚔️ Your Turn - Attack!" : "🤖 Computer's Turn..."}
+          <div className="text-center mb-6 glass-panel rounded-xl p-6 max-w-lg mx-auto">
+            <h2 className="text-2xl font-semibold text-blue-100">
+              {isPlayerTurn ? "⚔️ YOUR TURN - FIRE AT WILL!" : "🤖 ENEMY TURN - STAND BY..."}
             </h2>
           </div>
         )}
 
         {gamePhase === GAME_PHASES.GAME_OVER && (
-          <div className="text-center mb-6 bg-white rounded-xl shadow-lg p-8 max-w-md mx-auto">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              {winner === 'player' ? '🎉 You Win!' : '💥 Computer Wins!'}
+          <div className="text-center mb-6 glass-panel rounded-xl p-8 max-w-lg mx-auto">
+            <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 mb-4">
+              {winner === 'player' ? '🎉 VICTORY!' : '💥 DEFEAT!'}
             </h2>
+            <p className="text-blue-200 mb-6">
+              {winner === 'player' 
+                ? 'You have destroyed the enemy fleet!' 
+                : 'Your fleet has been destroyed...'}
+            </p>
             <button
               onClick={resetGame}
-              className="px-8 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium shadow-md hover:shadow-lg"
+              className="naval-button px-8 py-3 rounded-lg"
             >
-              Play Again
+              🔄 NEW MISSION
             </button>
           </div>
         )}
 
+        {/* Game Grids and Status */}
         <div className="flex justify-center gap-8 flex-wrap">
+          {/* Player Grid */}
           <div className="text-center">
-            <h3 className="text-xl font-semibold text-gray-700 mb-3">Your Fleet</h3>
-            <div className="bg-white rounded-xl shadow-lg p-4 inline-block">
+            <h3 className="text-2xl font-semibold text-blue-200 mb-3">🫥 YOUR FLEET</h3>
+            <div className="glass-panel rounded-xl p-4 inline-block">
               {renderGrid(playerGrid, false)}
             </div>
+            {renderShipStatus(SHIPS, playerSunkShips, true)}
           </div>
           
+          {/* Computer Grid */}
           {gamePhase !== GAME_PHASES.PLACEMENT && (
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-gray-700 mb-3">Computer Fleet</h3>
-              <div className="bg-white rounded-xl shadow-lg p-4 inline-block">
+              <h3 className="text-2xl font-semibold text-blue-200 mb-3">🎯 ENEMY FLEET</h3>
+              <div className="glass-panel rounded-xl p-4 inline-block">
                 {renderGrid(computerGrid, true)}
               </div>
+              {renderShipStatus(SHIPS, computerSunkShips, false)}
             </div>
           )}
         </div>
 
-        <div className="mt-8 flex justify-center gap-8 flex-wrap">
+        {/* Controls */}
+        <div className="mt-8 flex justify-center gap-4 flex-wrap">
           <button
             onClick={resetGame}
-            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors shadow-md hover:shadow-lg"
+            className="naval-button px-6 py-2 rounded-lg"
           >
-            Reset Game
+            🔄 ABORT MISSION
           </button>
         </div>
 
-        <div className="mt-8 max-w-md mx-auto bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-3">Legend</h3>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gray-700 border border-gray-300"></div>
-              <span className="text-gray-600">Your Ship</span>
+        {/* Legend */}
+        <div className="mt-8 max-w-lg mx-auto glass-panel rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-blue-200 mb-4">📋 TACTICAL DISPLAY</h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 ship-cell rounded"></div>
+              <span className="text-blue-100">Your Vessel</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gray-50 border border-gray-300"></div>
-              <span className="text-gray-600">Empty Water</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 water-cell rounded"></div>
+              <span className="text-blue-100">Open Water</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-red-500 border border-gray-300"></div>
-              <span className="text-gray-600">Hit</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 hit-cell rounded"></div>
+              <span className="text-blue-100">Direct Hit</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-blue-300 border border-gray-300"></div>
-              <span className="text-gray-600">Miss</span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 miss-cell rounded"></div>
+              <span className="text-blue-100">Miss</span>
             </div>
           </div>
         </div>
