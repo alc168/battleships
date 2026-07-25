@@ -29,7 +29,6 @@ function App() {
   const [computerShipPositions, setComputerShipPositions] = useState([]);
 
   const handleCellClick = (row, col) => {
-    console.log('Cell clicked:', { row, col, gamePhase, isPlayerTurn });
     if (gamePhase === GAME_PHASES.PLACEMENT) {
       handlePlacement(row, col);
     } else if (gamePhase === GAME_PHASES.PLAYING && isPlayerTurn) {

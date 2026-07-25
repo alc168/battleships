@@ -32,7 +32,8 @@
     transition: all 0.2s ease;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
     position: relative;
-    z-index: 1;
+    z-index: 10;
+    pointer-events: auto;
   }
 
   .tactical-cell:hover {
@@ -47,6 +48,9 @@
     box-shadow: 
       inset 0 2px 4px rgba(0, 0, 0, 0.4),
       0 1px 2px rgba(255, 255, 255, 0.1);
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
   }
 
   .hit-cell {
@@ -55,6 +59,9 @@
     box-shadow: 
       0 0 15px rgba(239, 68, 68, 0.6),
       inset 0 0 8px rgba(239, 68, 68, 0.4);
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
   }
 
   .miss-cell {
@@ -63,6 +70,9 @@
     box-shadow: 
       0 0 12px rgba(234, 179, 8, 0.5),
       inset 0 0 6px rgba(234, 179, 8, 0.3);
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
   }
 
   .skull-icon {
@@ -124,7 +134,7 @@
     animation: radarSpin 4s linear infinite;
     border-radius: inherit;
     pointer-events: none;
-    z-index: 0;
+    z-index: 1;
   }
 
   .radar-blip {

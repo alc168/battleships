@@ -11,9 +11,13 @@ export const isValidPlacement = (grid, ship, row, col, orientation) => {
   
   // Check if ship fits within grid bounds
   if (orientation === 'horizontal') {
-    if (col + size > GRID_SIZE) return false;
+    if (col + size > GRID_SIZE) {
+      return false;
+    }
   } else {
-    if (row + size > GRID_SIZE) return false;
+    if (row + size > GRID_SIZE) {
+      return false;
+    }
   }
   
   // Check for overlapping ships
